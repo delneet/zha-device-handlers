@@ -7,6 +7,7 @@ from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfT
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
@@ -15,6 +16,12 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaTemperatureMeasurement
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+
+battery_map = {
+    0x00: 20,  # Low
+    0x01: 50,  # Medium
+    0x02: 100,  # High
+}
 
 
 class TuyaTempUnitConvert(t.enum8):
@@ -475,6 +482,14 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     TuyaQuirkBuilder("_TZE284_8se38w3c", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=PowerConfiguration.ep_attribute,
+        attribute_name=PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
+        converter=lambda x: 2 * battery_map.get(x),
+        endpoint_id=1,
+    )
+    .adds(PowerConfiguration)
     .tuya_sensor(
         dp_id=38,
         attribute_name="temperature_probe",
